@@ -1,0 +1,71 @@
+// Import des classes nécessaires pour gérer les fichiers
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import java.io.IOException;
+
+// Dans la classe TutorialController
+@Controller
+public class TutorialController {
+
+  // ...
+
+  //@GetMapping("/tutorials/new")
+  public String addTutorial(Model model) {
+    Tutorial tutorial = new Tutorial();
+    tutorial.setPublished(true);
+    model.addAttribute("tutorial", tutorial);
+    model.addAttribute("pageTitle", "Create new Tutorial");
+    return "tutorial_form";
+  }
+
+  @PostMapping("/tutorials/save")
+  public String saveTutorial(@RequestParam("file") MultipartFile file, 
+                             @RequestPart("tutorial") Tutorial tutorial, 
+                             RedirectAttributes redirectAttributes) {
+    try {
+      // Si un fichier est soumis, enregistrez-le dans le répertoire de stockage et stockez le chemin dans l'objet Tutorial
+      String fileName = StringUtils.cleanPath(file.getOriginalFilename());
+      if (!fileName.isEmpty()) {
+        String uploadDir = "tutorial-photos/";
+        Path uploadPath = Paths.get(uploadDir);
+
+        if (!Files.exists(uploadPath)) {
+          Files.createDirectories(uploadPath);
+        }
+
+        try (InputStream inputStream = file.getInputStream()) {
+          Path filePath = uploadPath.resolve(fileName);
+          Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
+          tutorial.setPhoto(fileName);
+        } catch (IOException e) {
+          throw new IOException("Could not save uploaded file: " + fileName, e);
+        }
+      }
+
+      tutorialRepository.save(tutorial);
+
+      redirectAttributes.addFlashAttribute("message", "The Tutorial has been saved successfully!");
+    } catch (Exception e) {
+      redirectAttributes.addAttribute("message", e.getMessage());
+    }
+
+    return "redirect:/tutorials";
+  }
+
+  @GetMapping("/tutorials/{id}")
+  public String editTutorial(@PathVariable("id") Integer id, Model model, RedirectAttributes redirectAttributes) {
+    try {
+      Tutorial tutorial = tutorialRepository.findById(id).get();
+      model.addAttribute("tutorial", tutorial);
+      model.addAttribute("pageTitle", "Edit Tutorial (ID: " + id + ")");
+      return "tutorial_form";
+    } catch (Exception e) {
+      redirectAttributes.addFlashAttribute("message", e.getMessage());
+      return "redirect:/tutorials";
+    }
+  }
+
+  // ...
+}

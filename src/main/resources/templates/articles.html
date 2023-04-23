@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0" />
+  <title>Site marchand - Mercadona</title>
+
+  <link rel="stylesheet" type="text/css" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" />
+  <link rel="stylesheet" type="text/css" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
+  <script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+</head>
+
+<body>
+  <div th:replace="fragments/header :: header"></div>
+  <div class="col-lg-11" style="margin-left: 2%;">
+    <h2 class="text-center">Articles</h2>
+
+    <div th:if="${message != null}" class="alert alert-success alert-dismissible fade show text-center message"
+      role="alert">
+      [[${message}]]
+      <button type="button" class="close btn-sm" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+
+    <div class="my-3">
+      <form th:action="@{/articles}">
+        <div class="row d-flex">
+          <div class="col-md-6 mt-2">
+            <div class="search">
+              <i class="fa fa-search"></i>
+              <input id="keyword" type="search" name="keyword" th:value="${keyword}" required class="form-control"
+                placeholder="Enter keyword">
+              <button type="submit" class="btn btn-secondary">Search</button>
+            </div>
+          </div>
+          <div class="col-md-6 mt-2">
+            <button id="btnClear" class="btn btn-info">Clear</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div th:if="${articles.size() > 0}">
+      <table class="table table-hover">
+        <thead class="thead-light" style="display: none">
+          <tr>
+            <th scope="col">Title</th>
+            <th scope="col">Description</th>
+            <th scope="col">Prix</th>
+            <th scope="col">date début</th>
+            <!--<th scope="col">date fin</th>-->
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="article : ${articles}">
+            <td>[[${article.title}]]</td>
+            <td><img th:src="@{${article.url}}" height="60px" /></td> 
+            <td>[[${article.description}]]</td>
+             <td class="oldPrice">[[${article.price}]]€</td>
+            <td class="affichage">- [[${article.promotionPercentage}]]%</td>
+            <td class="affichage">du [[${article.promotionStartDate}]]</td>
+            <td class="affichage">au [[${article.promotionEndDate}]]</td> 
+            <td class='price' style="text-align: right;">[[${article.price}]]</td>
+            <td style="display: none" class="remise">[[${article.promotionPercentage}]]</td>
+            <td style="display: none" class="start">[[${article.promotionStartDate}]]</td>
+            <td style="display: none" class="end">[[${article.promotionEndDate}]]</td> 
+            <td class="affichage">€</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    </div>
+
+    <div class="" th:unless="${articles.size() > 0}">
+      <span>No articles found!</span>
+    </div>
+ 
+
+  <div class="modal fade text-center" id="confirmModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Delete Confirmation</h5>
+          <button type="button" class="close" data-dismiss="modal">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <span id="confirmText"></span>
+        </div>
+
+        <div class="modal-footer">
+          <a type="button" id="yesBtn" class="btn btn-danger">Yes</a>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div th:replace="fragments/footer :: footer"></div>
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      $(".btn-delete").on("click", function (e) {
+        e.preventDefault();
+        link = $(this);
+
+        articleTitle = link.attr("articleTitle");
+        $("#yesBtn").attr("href", link.attr("href"));
+        $("#confirmText").html("Do you want to delete the article \<strong\>" +articlelTitle + "\<\/strong\>?");
+        $("#confirmModal").modal();
+      });
+
+      $("#btnClear").on("click", function (e) {
+        e.preventDefault();
+        $("#keyword").text("");
+        window.location = "[[@{/articles}]]";
+      });
+	      function showDaysRemaining(){
+			    let toDay = new Date();
+			    let day = toDay.getDate()
+			    let month = toDay.getMonth() + 1
+			    let year = toDay.getFullYear()
+			    if(month < 10) {
+			       month = '0' + month;
+			    }
+			    if(day < 10) {
+			        day = '0' + day;
+			    }
+			    return ( year + "-" + month + "-" + day)
+			
+			}
+		
+	
+	      $('tr').each(function() {
+	    let start = $(this).find('.start').text();
+	    let end = $(this).find('.end').text();
+	    let price = $(this).find('.price').text();
+	    let oldPrice = $(this).find('.oldPrice').text();
+	    let remise = $(this).find('.remise').text();
+	    let prixRemise = price * (100 - remise) / 100;
+	    if (start !== "") {
+	      $(this).find('.price').css({'color': 'red', 'font-weight': 'bold'});
+	      $(this).find('.price').text(prixRemise);
+	    }
+	    if (end !== "" && end < showDaysRemaining()) {
+	   		 $(this).find('.price').css({'color': '', 'font-weight': ''});
+	    }
+	    if (end == "" || end < showDaysRemaining()) {
+	   	 	$(this).find('.affichage').css({"display" : "none"});
+	   		 $(this).find('.price').css({"display" : "none"});
+	    }
+	    if( end >= showDaysRemaining()){
+			$(this).find('.oldPrice').css({'color': 'gray', 'text-decoration' : 'line-through'});
+		}
+	    })
+	    
+
+	     
+});
+  </script>
+
+</body>
+
+</html>
